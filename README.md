@@ -1,3 +1,26 @@
+## rviz_satellite (jazzy) - 4.2.0-1
+
+The packages in the `rviz_satellite` repository were released into the `jazzy` distro by running `/usr/bin/bloom-release rviz_satellite --rosdistro jazzy -y` on `Tue, 20 May 2025 12:38:53 -0000`
+
+The `rviz_satellite` package was released.
+
+Version of package(s) in repository `rviz_satellite`:
+
+- upstream repository: https://github.com/nobleo/rviz_satellite.git
+- release repository: https://github.com/nobleo/rviz_satellite-release.git
+- rosdistro version: `4.1.0-2`
+- old version: `4.1.0-2`
+- new version: `4.2.0-1`
+
+Versions of tools used:
+
+- bloom version: `0.12.0`
+- catkin_pkg version: `1.0.0`
+- rosdep version: `0.25.1`
+- rosdistro version: `1.0.1`
+- vcstools version: `0.1.42`
+
+
 ## rviz_satellite (jazzy) - 4.1.0-2
 
 The packages in the `rviz_satellite` repository were released into the `jazzy` distro by running `/usr/bin/bloom-release rviz_satellite --rosdistro jazzy -y` on `Thu, 27 Feb 2025 07:25:00 -0000`
