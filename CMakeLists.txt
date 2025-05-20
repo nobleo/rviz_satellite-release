@@ -14,7 +14,6 @@ find_package(rclcpp REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(rviz_default_plugins REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(tf2_ros REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(angles REQUIRED)
 
@@ -34,7 +33,7 @@ target_compile_options(
   "-DRVIZ_SATELLITE_VERSION=\"${rviz_satellite_VERSION}\"")
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} Qt5::Network)
+target_link_libraries(${PROJECT_NAME} proj Qt5::Network)
 
 # prevent pluginlib from using boost
 target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
@@ -51,8 +50,8 @@ if(BUILD_TESTING)
   target_include_directories(test_field PRIVATE src)
 endif()
 
-ament_target_dependencies(${PROJECT_NAME} SYSTEM angles rclcpp pluginlib rviz_common rviz_default_plugins sensor_msgs tf2_ros)
-ament_export_dependencies(rclcpp pluginlib rviz_common rviz_default_plugins sensor_msgs tf2_ros)
+ament_target_dependencies(${PROJECT_NAME} SYSTEM angles rclcpp pluginlib rviz_common rviz_default_plugins sensor_msgs)
+ament_export_dependencies(rclcpp pluginlib rviz_common rviz_default_plugins sensor_msgs)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
@@ -69,6 +68,8 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}
 # Install demo
 install(FILES demo/demo.launch.xml
   DESTINATION share/${PROJECT_NAME}/launch)
+install(FILES demo/demo.rviz
+  DESTINATION share/${PROJECT_NAME}/demo)
 install(PROGRAMS demo/publish_demo_data
   DESTINATION lib/${PROJECT_NAME})
 
