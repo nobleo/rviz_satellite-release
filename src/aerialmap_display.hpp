@@ -68,7 +68,7 @@ protected:
 
   bool validateProperties();
 
-  void shiftMap(TileCoordinate center_tile, Ogre::Vector2i offset, double size);
+  bool shiftMap(TileCoordinate center_tile, Ogre::Vector2i offset, double size);
 
   void buildMap(TileCoordinate center_tile, double size);
 
@@ -84,6 +84,8 @@ protected:
 
   TileCoordinate centerTile() const;
 
+  double computeUTMrotation(double latitude, double longitude);
+
   rviz_common::properties::StringProperty * tile_url_property_ = nullptr;
   rviz_common::properties::IntProperty * zoom_property_ = nullptr;
   rviz_common::properties::IntProperty * blocks_property_ = nullptr;
@@ -97,6 +99,9 @@ protected:
   rviz_common::properties::StringProperty * local_origin_crs_property_ = nullptr;
   rviz_common::properties::FloatProperty * local_origin_x_property_ = nullptr;
   rviz_common::properties::FloatProperty * local_origin_y_property_ = nullptr;
+
+  rviz_common::properties::BoolProperty* use_local_tiles_property_ = nullptr;
+  rviz_common::properties::BoolProperty* visualize_in_utm_frame = nullptr;
 
   std::mutex tiles_mutex_;
   TileClient tile_client_;
