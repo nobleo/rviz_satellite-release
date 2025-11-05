@@ -86,6 +86,12 @@ AerialMapDisplay::AerialMapDisplay()
     this, SLOT(updateDrawUnder()));
   draw_under_property_->setShouldBeSaved(true);
 
+  visualize_in_utm_frame = new BoolProperty(
+      "Visualize in UTM Frame", false,
+      "If true, calculate UTM to LL rotation",
+      this, SLOT(updateBlocks()));
+  visualize_in_utm_frame->setShouldBeSaved(true);
+
   // properties for map
   tile_url_property_ =
     new StringProperty(
@@ -269,6 +275,7 @@ void AerialMapDisplay::updateLocalTileMapInformation()
   tile_map_info_.origin_x = local_origin_x_property_->getFloat();
   tile_map_info_.origin_y = local_origin_y_property_->getFloat();
   tile_map_info_.origin_crs = local_origin_crs_property_->getStdString();
+  tile_map_info_.project_to_utm = visualize_in_utm_frame->getBool();
 
   // create transformation if not already set
   if (!tile_map_info_.origin_crs.empty()) {
@@ -321,7 +328,11 @@ void AerialMapDisplay::processMessage(const NavSatFix::ConstSharedPtr msg)
           {
             // if center tile changed to some index direction, within the bounds of the surrounding blocks,
             // create only the missing tiles
-            shiftMap(center, offset, tile_size_m);
+            if (!shiftMap(center, offset, tile_size_m)) {
+              pending_tiles_.clear();
+              tiles_.clear();
+              buildMap(tile_at_fix, tile_size_m);
+            }
           } else {
             // if more tiles than blocks are skipped, recreate the entire map
             pending_tiles_.clear();
@@ -342,7 +353,7 @@ void AerialMapDisplay::processMessage(const NavSatFix::ConstSharedPtr msg)
   updateDrawUnder();
 }
 
-void AerialMapDisplay::shiftMap(TileCoordinate center, Ogre::Vector2i offset, double tile_size_m)
+bool AerialMapDisplay::shiftMap(TileCoordinate center, Ogre::Vector2i offset, double tile_size_m)
 {
   int delta_x = offset.data[0];
   int delta_y = offset.data[1];
@@ -358,8 +369,11 @@ void AerialMapDisplay::shiftMap(TileCoordinate center, Ogre::Vector2i offset, do
     const TileCoordinate coordinate_to_delete{x, y, center.z};
     const TileId tile_to_delete{tile_url, coordinate_to_delete};
     auto erased = tiles_.erase(tile_to_delete);
-    // TODO(ZeilingerM) assertion is not correct on border of map
-    rcpputils::assert_true(erased == 1, "failed to erase tile at far end");
+    if (erased != 1) {
+      // Add error logging if needed
+      RVIZ_COMMON_LOG_ERROR("Failed to erase tile at far end");
+      return false;
+    }
   }
 
   // shift existing tiles to new center
@@ -376,6 +390,7 @@ void AerialMapDisplay::shiftMap(TileCoordinate center, Ogre::Vector2i offset, do
     // set tile offset with the assumption of a new center
     buildTile(new_coordinate, near_offset - offset, tile_size_m);
   }
+  return true;
 }
 
 void AerialMapDisplay::buildMap(TileCoordinate center_tile, double size)
@@ -556,10 +571,26 @@ void AerialMapDisplay::update(float, float)
   auto center_tile_offset = tileOffset(*last_fix_, tile_map_info_);
   Ogre::Vector3 aerial_map_offset(center_tile_offset.x, -center_tile_offset.y, 0.0);
 
-  scene_node_->setPosition(
-    sensor_translation - orientation_to_map *
-    (aerial_map_offset * example_tile->second.tileSize()));
-  scene_node_->setOrientation(-orientation_to_map);
+  if (visualize_in_utm_frame->getValue().toBool()) {
+    double convergence_rad = computeUTMrotation(last_fix_->latitude, last_fix_->longitude);
+
+    Ogre::Quaternion utm_rotation(Ogre::Radian(convergence_rad), Ogre::Vector3::UNIT_Z);
+    Ogre::Vector3 map_offset_rotated =
+    utm_rotation * (aerial_map_offset * example_tile->second.tileSize());
+
+    scene_node_->setPosition(
+      sensor_translation - orientation_to_map * map_offset_rotated);
+
+    scene_node_->setOrientation(utm_rotation * -orientation_to_map);
+
+  }
+  else {
+    scene_node_->setPosition(
+      sensor_translation - orientation_to_map *
+      (aerial_map_offset * example_tile->second.tileSize()));
+
+    scene_node_->setOrientation(-orientation_to_map);
+  }
 
   // update alpha here to account for changing age
   updateAlpha(t);
@@ -622,6 +653,26 @@ TileCoordinate AerialMapDisplay::centerTile() const
   std::advance(it, tiles_.size() / 2);
   return it->first.coord;
 }
+
+double AerialMapDisplay::computeUTMrotation(double latitude, double longitude)
+{
+  // 1. get UTM zone (1 to 60)
+  int utm_zone = static_cast<int>(std::floor((longitude + 180.0) / 6.0)) + 1;
+
+  // 2. Mean Meridian of zone
+  double lon0 = (utm_zone - 1) * 6.0 - 180.0 + 3.0; // in degrees
+
+  // 3. Convert angles to radians
+  double lat_rad = latitude * M_PI / 180.0;
+  double lon_rad = longitude * M_PI / 180.0;
+  double lon0_rad = lon0 * M_PI / 180.0;
+
+  // 4. Compute meridian convergence (gamma)
+  double gamma_rad = (lon_rad - lon0_rad) * std::sin(lat_rad);
+
+  return gamma_rad;
+}
+
 
 void AerialMapDisplay::reset()
 {
