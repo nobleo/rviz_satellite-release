@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rviz_satellite</name>
-  <version>4.3.0</version>
+  <version>4.3.1</version>
   <description>Display satellite map tiles in RViz</description>
   <maintainer email="tim.clephas@nobleo.nl">Tim Clephas</maintainer>
 
@@ -14,6 +14,9 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <build_depend condition="$ROS_DISTRO > 'kilted'">qt6-base-dev</build_depend>
+  <build_depend condition="$ROS_DISTRO &lt;= 'kilted'">qtbase5-dev</build_depend>
+
   <depend>angles</depend>
   <depend>proj</depend>
   <depend>rclcpp</depend>
@@ -22,11 +25,8 @@
   <depend>rviz_default_plugins</depend>
   <depend>sensor_msgs</depend>
 
-  <build_depend>qtbase5-dev</build_depend>
-
   <test_depend>ament_cmake_gtest</test_depend>
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
+
   <export>
     <rviz plugin="plugin_description.xml"/>
     <build_type>ament_cmake</build_type>
